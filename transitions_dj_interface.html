@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transitions DJ Web</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg-dark: #1b1b1b;
+            --bg-panel: #232323;
+            --bg-mixer: #2a2a2a;
+            --bg-header: #2d2d2d;
+            --bg-waveform: #0a0a0a;
+            --text-main: #d1d1d1;
+            --text-muted: #888888;
+            --accent-red: #ff2a2a;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --border-color: #3a3a3a;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Scrollbar styles */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* Custom Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]:focus { outline: none; }
+        
+        .fader-vertical {
+            writing-mode: bt-lr;
+            -webkit-appearance: slider-vertical;
+            width: 24px;
+            height: 100%;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 2px;
+        }
+        .fader-vertical::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 30px;
+            width: 32px;
+            background: #444;
+            border-top: 2px solid #666;
+            border-bottom: 2px solid #222;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            border-radius: 2px;
+        }
+
+        .crossfader {
+            width: 150px;
+            height: 30px;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+        }
+        .crossfader::-webkit-slider-runnable-track { width: 100%; height: 100%; }
+        .crossfader::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 30px;
+            width: 40px;
+            background: #444;
+            border-left: 2px solid #666;
+            border-right: 2px solid #222;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            border-radius: 2px;
+        }
+
+        /* Jog Wheel */
+        .jog-wheel {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #333, #222);
+            border: 4px solid #1a1a1a;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 5px 15px rgba(0,0,0,0.4);
+            cursor: grab;
+        }
+        .jog-wheel:active { cursor: grabbing; }
+        .jog-inner {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            background: #2a2a2a;
+            border: 2px solid #111;
+            position: relative;
+            box-shadow: inset 0 2px 5px rgba(255,255,255,0.05);
+        }
+        .jog-indicator {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 40px;
+            background: #aaa;
+            border-radius: 3px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        .jog-center-dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 16px;
+            height: 16px;
+            background: #111;
+            border-radius: 50%;
+            border: 2px solid #444;
+        }
+
+        /* Knobs */
+        .knob-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .knob {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(180deg, #444 0%, #222 100%);
+            border: 2px solid #111;
+            position: relative;
+            cursor: ns-resize;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            transform: rotate(-150deg); /* Default position */
+        }
+        .knob-indicator {
+            position: absolute;
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 10px;
+            background: #fff;
+        }
+
+        /* Buttons */
+        .btn-transport {
+            background: #333;
+            border: 1px solid #111;
+            border-radius: 2px;
+            color: #ccc;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+        .btn-transport:hover { background: #3a3a3a; }
+        .btn-transport:active, .btn-transport.active {
+            background: #222;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+            color: #fff;
+        }
+        
+        .btn-cue {
+            background: #2a2a2a;
+            border: 1px solid #111;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            cursor: pointer;
+            color: #aaa;
+        }
+        .btn-cue:hover { background: #333; }
+
+        /* Tables */
+        .playlist-table th {
+            position: sticky;
+            top: 0;
+            background: #1e1e1e;
+            z-index: 10;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .playlist-table tr:nth-child(even) { background-color: rgba(255,255,255,0.02); }
+        .playlist-table tr:hover { background-color: rgba(255,255,255,0.05); }
+
+        /* Utility specific */
+        .text-xxs { font-size: 0.65rem; }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="h-10 bg-[#222] border-b border-[#333] flex items-center justify-between px-4 shrink-0 shadow-md z-20">
+        <div class="flex items-center gap-6">
+            <h1 class="text-white font-bold text-sm tracking-wide">transitions dj</h1>
+            <nav class="flex gap-4 text-xs font-semibold text-gray-400">
+                <span class="hover:text-white cursor-pointer transition-colors">WAVES</span>
+                <span class="hover:text-white cursor-pointer transition-colors">STEMS</span>
+                <span class="text-gray-200">ALCANCE</span>
+                <span class="text-[#555]">LÍNEA DE TI</span>
+                <span class="hover:text-white cursor-pointer transition-colors">FX</span>
+            </nav>
+        </div>
+        <div class="flex items-center gap-4 text-gray-400">
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] font-bold">MASTER</span>
+                <div class="flex gap-[1px] h-3 items-end">
+                    <!-- Fake VU Meter -->
+                    <div class="w-1 h-[2px] bg-green-500"></div><div class="w-1 h-[4px] bg-green-500"></div><div class="w-1 h-[6px] bg-green-500"></div><div class="w-1 h-[8px] bg-green-500"></div><div class="w-1 h-[10px] bg-green-500"></div><div class="w-1 h-[12px] bg-green-500"></div><div class="w-1 h-[12px] bg-yellow-500"></div><div class="w-1 h-[10px] bg-[#333]"></div><div class="w-1 h-[8px] bg-[#333]"></div>
+                </div>
+                <div class="knob w-5 h-5 mx-1" style="transform: rotate(0deg);"><div class="knob-indicator h-2"></div></div>
+            </div>
+            <svg class="w-4 h-4 cursor-pointer hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <svg class="w-4 h-4 cursor-pointer hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            <svg class="w-4 h-4 cursor-pointer hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <svg class="w-4 h-4 cursor-pointer hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        </div>
+    </header>
+
+    <!-- Top Section (Decks & Waveforms) -->
+    <div class="flex h-[35%] min-h-[220px] bg-[#222] border-b border-[#111] shrink-0">
+        
+        <!-- Deck A Controls (Left) -->
+        <div class="w-[280px] bg-[#232323] p-3 flex flex-col justify-between shrink-0 relative border-r border-[#1a1a1a]">
+            <div class="flex justify-between items-start text-xs font-bold text-gray-400">
+                <span class="hover:text-white cursor-pointer">Arrastrar canción aquí</span>
+                <div class="text-right">
+                    <div class="text-white text-sm">BPM</div>
+                    <div class="text-[10px] text-gray-500">+0.0%</div>
+                </div>
+            </div>
+            
+            <div class="flex justify-between items-center px-4 mt-2">
+                <div class="flex flex-col items-center gap-1 opacity-50">
+                    <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.28l8-1.6v5.434A4.369 4.369 0 0015 11c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"></path></svg>
+                </div>
+                
+                <div class="jog-wheel mx-auto" id="jog-a">
+                    <div class="jog-inner">
+                        <div class="jog-indicator"></div>
+                        <div class="jog-center-dot"></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center h-full pb-6 pt-2">
+                    <input type="range" class="fader-vertical" min="0" max="100" value="50">
+                    <div class="mt-2 text-[10px] font-bold text-gray-500 flex justify-between w-full px-1"><span>-</span><span>+</span></div>
+                </div>
+            </div>
+
+            <button class="absolute bottom-3 right-3 bg-[#333] hover:bg-[#444] text-[10px] font-bold py-1 px-3 rounded border border-[#111]">SINC</button>
+        </div>
+
+        <!-- Waveforms (Center) -->
+        <div class="flex-1 bg-[#0a0a0a] relative overflow-hidden flex flex-col">
+            <!-- Beat grids overlay (Mock) -->
+            <div class="absolute inset-0 flex justify-between w-full h-full pointer-events-none opacity-20">
+                <!-- Vertical grid lines -->
+                <div class="w-[1px] h-full bg-white ml-[10%]"></div>
+                <div class="w-[1px] h-full bg-white ml-[10%]"></div>
+                <div class="w-[1px] h-full bg-white ml-[10%]"></div>
+                <div class="w-[1px] h-full bg-white ml-[10%]"></div>
+                <div class="w-[1px] h-full bg-white ml-[10%]"></div>
+                <div class="w-[1px] h-full bg-white ml-[10%]"></div>
+                <div class="w-[1px] h-full bg-white ml-[10%]"></div>
+                <div class="w-[1px] h-full bg-white ml-[10%]"></div>
+                <div class="w-[1px] h-full bg-white ml-[10%]"></div>
+            </div>
+
+            <!-- Waveform A Area -->
+            <div class="flex-1 border-b border-[#222] relative flex items-center">
+                 <!-- Mock waveform visual -->
+                 <div class="w-full h-12 flex items-center justify-around opacity-40">
+                     <div class="w-1 h-8 bg-blue-500 rounded-sm"></div><div class="w-1 h-12 bg-blue-400 rounded-sm"></div><div class="w-1 h-6 bg-blue-600 rounded-sm"></div><div class="w-1 h-10 bg-blue-500 rounded-sm"></div>
+                     <div class="w-1 h-8 bg-blue-500 rounded-sm"></div><div class="w-1 h-12 bg-blue-400 rounded-sm"></div><div class="w-1 h-6 bg-blue-600 rounded-sm"></div><div class="w-1 h-10 bg-blue-500 rounded-sm"></div>
+                     <div class="w-1 h-8 bg-blue-500 rounded-sm"></div><div class="w-1 h-12 bg-blue-400 rounded-sm"></div><div class="w-1 h-6 bg-blue-600 rounded-sm"></div><div class="w-1 h-10 bg-blue-500 rounded-sm"></div>
+                     <div class="w-1 h-8 bg-blue-500 rounded-sm"></div><div class="w-1 h-12 bg-blue-400 rounded-sm"></div><div class="w-1 h-6 bg-blue-600 rounded-sm"></div><div class="w-1 h-10 bg-blue-500 rounded-sm"></div>
+                 </div>
+            </div>
+            
+            <!-- Center Red Playhead Line -->
+            <div class="absolute left-1/2 top-0 bottom-0 w-[2px] bg-red-600 z-10 shadow-[0_0_5px_rgba(255,0,0,0.8)]"></div>
+
+            <!-- Waveform B Area -->
+            <div class="flex-1 relative flex items-center">
+                  <!-- Mock waveform visual -->
+                  <div class="w-full h-12 flex items-center justify-around opacity-40">
+                    <div class="w-1 h-10 bg-green-500 rounded-sm"></div><div class="w-1 h-6 bg-green-400 rounded-sm"></div><div class="w-1 h-12 bg-green-600 rounded-sm"></div><div class="w-1 h-8 bg-green-500 rounded-sm"></div>
+                    <div class="w-1 h-10 bg-green-500 rounded-sm"></div><div class="w-1 h-6 bg-green-400 rounded-sm"></div><div class="w-1 h-12 bg-green-600 rounded-sm"></div><div class="w-1 h-8 bg-green-500 rounded-sm"></div>
+                    <div class="w-1 h-10 bg-green-500 rounded-sm"></div><div class="w-1 h-6 bg-green-400 rounded-sm"></div><div class="w-1 h-12 bg-green-600 rounded-sm"></div><div class="w-1 h-8 bg-green-500 rounded-sm"></div>
+                    <div class="w-1 h-10 bg-green-500 rounded-sm"></div><div class="w-1 h-6 bg-green-400 rounded-sm"></div><div class="w-1 h-12 bg-green-600 rounded-sm"></div><div class="w-1 h-8 bg-green-500 rounded-sm"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deck B Controls (Right) -->
+        <div class="w-[280px] bg-[#232323] p-3 flex flex-col justify-between shrink-0 relative border-l border-[#1a1a1a]">
+             <div class="flex justify-between items-start text-xs font-bold text-gray-400">
+                <div class="text-left">
+                    <div class="text-white text-sm">BPM</div>
+                    <div class="text-[10px] text-gray-500">+0.0%</div>
+                </div>
+                <span class="hover:text-white cursor-pointer">Arrastrar canción aquí</span>
+            </div>
+            
+            <div class="flex justify-between items-center px-4 mt-2">
+                 <div class="flex flex-col items-center h-full pb-6 pt-2">
+                    <input type="range" class="fader-vertical" min="0" max="100" value="50">
+                    <div class="mt-2 text-[10px] font-bold text-gray-500 flex justify-between w-full px-1"><span>-</span><span>+</span></div>
+                </div>
+
+                <div class="jog-wheel mx-auto" id="jog-b">
+                    <div class="jog-inner">
+                        <div class="jog-indicator"></div>
+                        <div class="jog-center-dot"></div>
+                    </div>
+                </div>
+
+                 <div class="flex flex-col items-center gap-1 opacity-50">
+                    <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.28l8-1.6v5.434A4.369 4.369 0 0015 11c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"></path></svg>
+                </div>
+            </div>
+
+            <button class="absolute bottom-3 right-3 bg-[#333] hover:bg-[#444] text-[10px] font-bold py-1 px-3 rounded border border-[#111]">SINC</button>
+        </div>
+    </div>
+
+    <!-- Middle Section (Mixer) -->
+    <div class="h-[90px] bg-[#2a2a2a] border-b border-[#111] flex shrink-0 shadow-lg z-10 relative">
+        
+        <!-- Left Deck Transport & EQ -->
+        <div class="flex-1 flex items-center justify-between px-6 border-r border-[#1a1a1a]">
+            <!-- Play/Cue -->
+            <div class="flex items-center gap-4">
+                <div class="flex flex-col gap-1">
+                    <div class="text-xxs text-gray-500 font-bold mb-1 ml-1">CUE</div>
+                    <div class="flex">
+                        <div class="btn-transport w-8 h-8 rounded-l-md border-r-0"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z"></path></svg></div>
+                        <div class="btn-transport w-8 h-8 rounded-r-md"><svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg></div>
+                    </div>
+                </div>
+                <div class="flex mt-4 gap-[2px]">
+                    <div class="btn-cue rounded-l">1</div>
+                    <div class="btn-cue">2</div>
+                    <div class="btn-cue">3</div>
+                    <div class="btn-cue rounded-r">4</div>
+                </div>
+            </div>
+
+            <!-- Loop -->
+            <div class="flex flex-col items-center">
+                <div class="text-xxs text-gray-500 font-bold mb-1">BUCLE</div>
+                <div class="flex">
+                    <div class="btn-transport w-6 h-6 rounded-l-md border-r-0"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></div>
+                    <div class="btn-transport w-8 h-6 bg-[#222]">4</div>
+                    <div class="btn-transport w-6 h-6 rounded-r-md border-l-0"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></div>
+                </div>
+            </div>
+
+            <!-- EQ A -->
+            <div class="flex gap-4 items-center">
+                <div class="knob-container">
+                    <span class="text-xxs text-gray-500 font-bold">GRAVE</span>
+                    <div class="knob rotate-action"><div class="knob-indicator"></div></div>
+                </div>
+                <div class="knob-container">
+                    <span class="text-xxs text-gray-500 font-bold">MEDIO</span>
+                    <div class="knob rotate-action"><div class="knob-indicator"></div></div>
+                </div>
+                <div class="knob-container">
+                    <span class="text-xxs text-gray-500 font-bold">AGUDO</span>
+                    <div class="knob rotate-action"><div class="knob-indicator"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Mixer (Faders) -->
+        <div class="w-[300px] flex items-center justify-center relative shrink-0">
+             <!-- Left Channel Vol -->
+             <div class="absolute left-6 top-1 bottom-1 w-8 flex flex-col items-center">
+                 <input type="range" class="fader-vertical !w-full" min="0" max="100" value="80">
+             </div>
+
+             <!-- Crossfader container -->
+             <div class="flex flex-col items-center relative w-full h-full justify-center">
+                <!-- Visual center marks -->
+                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center z-0 pointer-events-none opacity-30">
+                    <div class="w-1 h-12 border-l border-r border-white mx-4"></div>
+                    <div class="w-[2px] h-16 bg-white mx-4"></div>
+                    <div class="w-1 h-12 border-l border-r border-white mx-4"></div>
+                </div>
+                <input type="range" class="crossfader z-10" min="0" max="100" value="50">
+             </div>
+
+             <!-- Right Channel Vol -->
+             <div class="absolute right-6 top-1 bottom-1 w-8 flex flex-col items-center">
+                 <input type="range" class="fader-vertical !w-full" min="0" max="100" value="80">
+             </div>
+        </div>
+
+        <!-- Right Deck Transport & EQ -->
+        <div class="flex-1 flex items-center justify-between px-6 border-l border-[#1a1a1a]">
+             <!-- EQ B -->
+             <div class="flex gap-4 items-center">
+                <div class="knob-container">
+                    <span class="text-xxs text-gray-500 font-bold">GRAVE</span>
+                    <div class="knob rotate-action"><div class="knob-indicator"></div></div>
+                </div>
+                <div class="knob-container">
+                    <span class="text-xxs text-gray-500 font-bold">MEDIO</span>
+                    <div class="knob rotate-action"><div class="knob-indicator"></div></div>
+                </div>
+                <div class="knob-container">
+                    <span class="text-xxs text-gray-500 font-bold">AGUDO</span>
+                    <div class="knob rotate-action"><div class="knob-indicator"></div></div>
+                </div>
+            </div>
+
+             <!-- Loop -->
+             <div class="flex flex-col items-center">
+                <div class="text-xxs text-gray-500 font-bold mb-1">BUCLE</div>
+                <div class="flex">
+                    <div class="btn-transport w-6 h-6 rounded-l-md border-r-0"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></div>
+                    <div class="btn-transport w-8 h-6 bg-[#222]">4</div>
+                    <div class="btn-transport w-6 h-6 rounded-r-md border-l-0"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></div>
+                </div>
+            </div>
+
+            <!-- Play/Cue -->
+            <div class="flex items-center gap-4">
+                 <div class="flex mt-4 gap-[2px]">
+                    <div class="btn-cue rounded-l">1</div>
+                    <div class="btn-cue">2</div>
+                    <div class="btn-cue">3</div>
+                    <div class="btn-cue rounded-r">4</div>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <div class="text-xxs text-gray-500 font-bold mb-1 mr-1 text-right">CUE</div>
+                    <div class="flex">
+                        <div class="btn-transport w-8 h-8 rounded-l-md border-r-0"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z"></path></svg></div>
+                        <div class="btn-transport w-8 h-8 rounded-r-md"><svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Section (Library) -->
+    <div class="flex flex-1 overflow-hidden bg-[#1a1a1a]">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-[200px] bg-[#232323] flex flex-col shrink-0 border-r border-[#111] overflow-y-auto">
+            <div class="p-2 border-b border-[#333]">
+                <div class="bg-[#111] rounded px-2 py-1 flex items-center border border-[#333]">
+                    <svg class="w-3 h-3 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <input type="text" placeholder="Buscar canciones" class="bg-transparent border-none text-xs text-white outline-none w-full placeholder-gray-600">
+                </div>
+            </div>
+
+            <nav class="flex flex-col text-sm font-medium text-gray-300 mt-2">
+                <a href="#" class="px-4 py-2 hover:bg-[#333] hover:text-white flex items-center bg-[#3a3a3a] border-l-4 border-gray-400">
+                    <svg class="w-4 h-4 mr-3 text-purple-500" fill="currentColor" viewBox="0 0 20 20"><path d="M2 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V4zM8 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1H9a1 1 0 01-1-1V4zM15 3a1 1 0 00-1 1v12a1 1 0 001 1h2a1 1 0 001-1V4a1 1 0 00-1-1h-2z"></path></svg>
+                    Biblioteca
+                </a>
+                <a href="#" class="px-4 py-2 hover:bg-[#333] hover:text-white flex items-center mt-1">
+                    <svg class="w-4 h-4 mr-3 text-orange-500" fill="currentColor" viewBox="0 0 24 24"><path d="M8.28 12.87c.18-1.55.93-2.95 2.1-3.95V7.5a6 6 0 0 1 12 0v5.37h.12a2.5 2.5 0 0 1 0 5H8.28a3.5 3.5 0 0 1 0-7z"></path></svg>
+                    SoundCloud
+                </a>
+                
+                <div class="mt-4">
+                    <a href="#" class="px-4 py-2 hover:bg-[#333] hover:text-white flex items-center text-xs">
+                        <span class="w-2 h-2 rounded-full bg-orange-600 mr-3"></span> Dance & EDM
+                    </a>
+                    <a href="#" class="px-4 py-2 hover:bg-[#333] hover:text-white flex items-center text-xs">
+                        <span class="w-2 h-2 rounded-full bg-orange-500 mr-3"></span> Deep House
+                    </a>
+                    <a href="#" class="px-4 py-2 hover:bg-[#333] hover:text-white flex items-center text-xs">
+                        <span class="w-2 h-2 rounded-full bg-orange-700 mr-3"></span> Drum & Bass
+                    </a>
+                    <a href="#" class="px-4 py-2 hover:bg-[#333] hover:text-white flex items-center text-xs">
+                        <span class="w-2 h-2 rounded-full bg-orange-400 mr-3"></span> Dubstep
+                    </a>
+                    <a href="#" class="px-4 py-2 hover:bg-[#333] hover:text-white flex items-center text-xs">
+                        <span class="w-2 h-2 rounded-full bg-orange-500 mr-3"></span> Electronic
+                    </a>
+                    <a href="#" class="px-4 py-2 hover:bg-[#333] hover:text-white flex items-center text-xs">
+                        <span class="w-2 h-2 rounded-full bg-orange-600 mr-3"></span> Hip-hop & Rap
+                    </a>
+                    <a href="#" class="px-4 py-2 hover:bg-[#333] hover:text-white flex items-center text-xs">
+                        <span class="w-2 h-2 rounded-full bg-orange-500 mr-3"></span> House
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Playlist Table -->
+        <main class="flex-1 overflow-auto bg-[#1e1e1e] relative">
+            <table class="w-full text-left border-collapse playlist-table text-[11px] text-gray-300">
+                <thead>
+                    <tr class="text-gray-500 font-bold uppercase tracking-wider">
+                        <th class="p-2 w-8 text-center">#</th>
+                        <th class="p-2 w-12">ARTE</th>
+                        <th class="p-2">TÍTULO</th>
+                        <th class="p-2 w-48">ARTISTA</th>
+                        <th class="p-2 w-24">DURACIÓN</th>
+                        <th class="p-2 w-16">BPM</th>
+                        <th class="p-2 w-24">TONALIDAD</th>
+                        <th class="p-2 w-32">GÉNERO</th>
+                        <th class="p-2 w-12">VÍNCUL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Mock Data Rows based on image -->
+                    <tr class="border-b border-[#222] cursor-pointer group">
+                        <td class="p-2 text-center text-gray-500">1</td>
+                        <td class="p-2"><img src="https://placehold.co/30x30/444/999?text=4L" class="w-6 h-6 rounded" alt="cover"></td>
+                        <td class="p-2 font-medium text-white group-hover:text-blue-400">4 Letters (TikTok Song)</td>
+                        <td class="p-2">humbletay23</td>
+                        <td class="p-2 text-gray-400">2:59</td>
+                        <td class="p-2 text-gray-400">85</td>
+                        <td class="p-2 text-purple-400 font-medium">Am</td>
+                        <td class="p-2">R&B & Soul</td>
+                        <td class="p-2"><div class="w-3 h-2 bg-gray-600 rounded-sm inline-block"></div></td>
+                    </tr>
+                    <tr class="border-b border-[#222] cursor-pointer group">
+                        <td class="p-2 text-center text-gray-500">2</td>
+                        <td class="p-2"><img src="https://placehold.co/30x30/224/999?text=4U" class="w-6 h-6 rounded" alt="cover"></td>
+                        <td class="p-2 font-medium text-white group-hover:text-blue-400">4URA & Young Viridii - Yesterday [NCS Release]</td>
+                        <td class="p-2">NCS</td>
+                        <td class="p-2 text-gray-400">3:26</td>
+                        <td class="p-2 text-gray-400">88</td>
+                        <td class="p-2 text-green-400 font-medium">F#</td>
+                        <td class="p-2">Drum & Bass</td>
+                        <td class="p-2"><div class="w-3 h-2 bg-gray-600 rounded-sm inline-block"></div></td>
+                    </tr>
+                    <tr class="border-b border-[#222] cursor-pointer group">
+                        <td class="p-2 text-center text-gray-500">3</td>
+                        <td class="p-2"><img src="https://placehold.co/30x30/523/999?text=SP" class="w-6 h-6 rounded" alt="cover"></td>
+                        <td class="p-2 font-medium text-white group-hover:text-blue-400">[Splatoon 3 Remix] Deep Cut - Anarchy Rainbow</td>
+                        <td class="p-2">Video Game Remixes</td>
+                        <td class="p-2 text-gray-400">3:45</td>
+                        <td class="p-2 text-gray-400">130</td>
+                        <td class="p-2 text-cyan-400 font-medium">C#m</td>
+                        <td class="p-2">Splatoon</td>
+                        <td class="p-2"><div class="w-3 h-2 bg-gray-600 rounded-sm inline-block"></div></td>
+                    </tr>
+                    <tr class="border-b border-[#222] cursor-pointer group">
+                        <td class="p-2 text-center text-gray-500">4</td>
+                        <td class="p-2"><img src="https://placehold.co/30x30/113/999?text=AB" class="w-6 h-6 rounded" alt="cover"></td>
+                        <td class="p-2 font-medium text-white group-hover:text-blue-400">Abandoned feat. Tadeusz - Passengers</td>
+                        <td class="p-2">Ophelia Records</td>
+                        <td class="p-2 text-gray-400">4:59</td>
+                        <td class="p-2 text-gray-400">145</td>
+                        <td class="p-2 text-teal-400 font-medium">Abm</td>
+                        <td class="p-2">Dance & EDM</td>
+                        <td class="p-2"><div class="w-3 h-2 bg-gray-600 rounded-sm inline-block"></div></td>
+                    </tr>
+                    <tr class="border-b border-[#222] cursor-pointer group">
+                        <td class="p-2 text-center text-gray-500">5</td>
+                        <td class="p-2"><img src="https://placehold.co/30x30/921/999?text=RR" class="w-6 h-6 rounded" alt="cover"></td>
+                        <td class="p-2 font-medium text-white group-hover:text-blue-400">Absence - Rio Romeo (they/them)</td>
+                        <td class="p-2">Rio Romeo</td>
+                        <td class="p-2 text-gray-400">2:35</td>
+                        <td class="p-2 text-gray-400">119</td>
+                        <td class="p-2 text-green-400 font-medium">Abm</td>
+                        <td class="p-2">Alternative Rock</td>
+                        <td class="p-2"><div class="w-3 h-2 bg-gray-600 rounded-sm inline-block"></div></td>
+                    </tr>
+                    <tr class="border-b border-[#222] cursor-pointer group">
+                        <td class="p-2 text-center text-gray-500">6</td>
+                        <td class="p-2"><img src="https://placehold.co/30x30/333/999?text=AD" class="w-6 h-6 rounded" alt="cover"></td>
+                        <td class="p-2 font-medium text-white group-hover:text-blue-400">Addicted</td>
+                        <td class="p-2">aware</td>
+                        <td class="p-2 text-gray-400">3:38</td>
+                        <td class="p-2 text-gray-400">100</td>
+                        <td class="p-2 text-yellow-500 font-medium">Bbm</td>
+                        <td class="p-2">Frenchcore</td>
+                        <td class="p-2"><div class="w-3 h-2 bg-gray-600 rounded-sm inline-block"></div></td>
+                    </tr>
+                    <tr class="border-b border-[#222] cursor-pointer group">
+                        <td class="p-2 text-center text-gray-500">7</td>
+                        <td class="p-2"><img src="https://placehold.co/30x30/522/999?text=SK" class="w-6 h-6 rounded" alt="cover"></td>
+                        <td class="p-2 font-medium text-white group-hover:text-blue-400">Adele Skyfall Hardstyle Remix</td>
+                        <td class="p-2">taichiune</td>
+                        <td class="p-2 text-gray-400">2:38</td>
+                        <td class="p-2 text-gray-400">101</td>
+                        <td class="p-2 text-red-400 font-medium">Dm</td>
+                        <td class="p-2"></td>
+                        <td class="p-2"><div class="w-3 h-2 bg-gray-600 rounded-sm inline-block"></div></td>
+                    </tr>
+                    <tr class="border-b border-[#222] cursor-pointer group">
+                        <td class="p-2 text-center text-gray-500">8</td>
+                        <td class="p-2"><img src="https://placehold.co/30x30/628/999?text=AD" class="w-6 h-6 rounded" alt="cover"></td>
+                        <td class="p-2 font-medium text-white group-hover:text-blue-400">Adiios - Pass The Peas</td>
+                        <td class="p-2">Serotonin Signals</td>
+                        <td class="p-2 text-gray-400">2:04</td>
+                        <td class="p-2 text-gray-400">140</td>
+                        <td class="p-2 text-blue-400 font-medium">Bm</td>
+                        <td class="p-2">Signals</td>
+                        <td class="p-2"><div class="w-3 h-2 bg-gray-600 rounded-sm inline-block"></div></td>
+                    </tr>
+                    <tr class="border-b border-[#222] cursor-pointer group">
+                        <td class="p-2 text-center text-gray-500">9</td>
+                        <td class="p-2"><img src="https://placehold.co/30x30/269/999?text=AG" class="w-6 h-6 rounded" alt="cover"></td>
+                        <td class="p-2 font-medium text-white group-hover:text-blue-400">Agressor Bunx - Cybertron (Eatbrain 142)</td>
+                        <td class="p-2">EATBRAIN</td>
+                        <td class="p-2 text-gray-400">3:35</td>
+                        <td class="p-2 text-gray-400">174</td>
+                        <td class="p-2 text-orange-400 font-medium">Fm</td>
+                        <td class="p-2">Drum & Bass</td>
+                        <td class="p-2"><div class="w-3 h-2 bg-gray-600 rounded-sm inline-block"></div></td>
+                    </tr>
+                    <!-- Fill space to enable scrolling feel -->
+                    <tr class="h-full">
+                        <td colspan="9"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </main>
+    </div>
+
+    <!-- Basic Interaction Script for UI flair -->
+    <script>
+        // Simple knob rotation interaction
+        const knobs = document.querySelectorAll('.rotate-action');
+        
+        knobs.forEach(knob => {
+            let isDragging = false;
+            let startY;
+            let currentRot = -150; // Starting rotation based on CSS
+            
+            knob.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startY = e.clientY;
+                e.preventDefault(); // Prevent text selection
+            });
+            
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const deltaY = startY - e.clientY;
+                // Update rotation, clamp between -150 and 150
+                let newRot = currentRot + deltaY * 2; 
+                newRot = Math.max(-150, Math.min(150, newRot));
+                
+                knob.style.transform = `rotate(${newRot}deg)`;
+                startY = e.clientY;
+                currentRot = newRot;
+            });
+            
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+        });
+
+        // Simple jog wheel visual rotation
+        const jogWheels = document.querySelectorAll('.jog-wheel');
+        jogWheels.forEach(wheel => {
+            let isDragging = false;
+            let startX;
+            let currentRot = 0;
+
+            wheel.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startX = e.clientX;
+                e.preventDefault();
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if(!isDragging) return;
+                const deltaX = e.clientX - startX;
+                currentRot += deltaX;
+                wheel.querySelector('.jog-inner').style.transform = `rotate(${currentRot}deg)`;
+                startX = e.clientX;
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+        });
+
+        // Button toggle effects
+        const transportBtns = document.querySelectorAll('.btn-transport');
+        transportBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Toggle active class for visual feedback (mostly for play buttons)
+                if(btn.innerHTML.includes('18a8')) { // simple check for play icon SVG
+                    btn.classList.toggle('active');
+                    btn.classList.toggle('text-green-500'); // Light up green when playing
+                }
+            });
+        });
+    </script>
+</body>
+</html>
